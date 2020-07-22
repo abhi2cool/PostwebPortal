@@ -1,0 +1,55 @@
+﻿@model PostwebPortal.Models.ResponseData
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Postweb Portal</h1>
+    <p style="color:white">.</p>
+</div>
+
+
+
+@using (Html.BeginForm("Index", "Home", FormMethod.Post, new { enctype = "multipart/form-data" }))
+    {
+
+    <div class="input-group mb-3" align="center">
+        <table>
+            <tr>
+                <td width="500"><input type="text" class="form-control" placeholder="Query" aria-label="Query" aria-describedby="basic-addon2" id="Query" name="Query" value="@ViewBag.Query"></td>
+                <td><button class="btn btn-outline-success" type="submit" name="Search">Search</button></td>                
+            </tr>
+
+        </table>
+    </div>
+    <div class="panel-body">
+        
+        <table style="table-layout:auto">
+            @{ int count=1;}
+            @foreach (var item in Model.allUrlDetails)
+            {
+
+            <tr style="border-top: 1px solid;border-top-color:lightgray"><td colspan="2"><b>Algo @count :&nbsp; </b><a href="@item.bingData.url" target="_blank" style="color:blue">@Html.DisplayFor(modelItem => item.bingData.name)</a></td></tr>
+            <tr><td colspan="2"><a href="@item.bingData.url" target="_blank" style="color:olivedrab">@Html.DisplayFor(modelItem => item.bingData.displayUrl)</a></td></tr>
+            <tr><td colspan="2"><p style="color:dimgray">@Html.DisplayFor(modelItem => item.bingData.snippet)</p></td></tr>
+
+            <tr><td style="white-space:nowrap"><p style="color:dimgray;"><b>Passages : @Html.DisplayFor(modelItem => item.allPassages.Count)</b></p></td></tr>
+
+            @foreach (var item2 in item.allPassages)
+                {
+            <tr><td></td><td style="border-top: 1px solid;border-left: 1px solid;border-right: 1px solid;padding-top:5px"><p style="color:dimgray;"><b>RootQueries : </b>@Html.DisplayFor(modelItem => item2.RootQueries)</p></td></tr>
+            <tr><td></td><td style="border-left: 1px solid;border-right: 1px solid"><p style="color:dimgray"><b>AnswerId : </b>@Html.Raw(item2.PassageId)</p></td></tr>
+            <tr><td></td><td style="border-left: 1px solid;border-right: 1px solid"><p style="color:dimgray">@Html.Raw(item2.RawAnswer)</p></td></tr>
+            <tr><td></td><td style="border-left: 1px solid;border-right: 1px solid"><a href="@item2.Url" target="_blank" style="color:blue">@Html.DisplayFor(modelItem => item2.HtmlHeadTitle)</a></td></tr>
+            <tr><td></td><td style="border-bottom: 1px solid;border-left: 1px solid;border-right: 1px solid"><a href="@item2.Url" target="_blank" style="color:olivedrab">@Html.DisplayFor(modelItem => item2.Url)</a></td></tr>
+            <tr><td><p style="color:white">.</p></td></tr>
+                }
+             count++;
+            }
+
+        </table>
+    </div>
+
+
+
+}

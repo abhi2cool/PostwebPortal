@@ -1,0 +1,63 @@
+﻿@model PostwebPortal.Models.QEResponseData
+@{
+    ViewData["Title"] = "QueryExpansion";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Query Expansion</h1>
+    <p style="color:white">.</p>
+</div>
+
+
+
+
+@using (Html.BeginForm("QueryExpansion", "Home", FormMethod.Post, new { enctype = "multipart/form-data" }))
+{
+
+    <div class="input-group mb-3" align="center">
+        <table>
+            <tr>
+                <td width="500"><input type="text" class="form-control" placeholder="AnswerId" aria-label="Query" aria-describedby="basic-addon2" id="QEQuery" name="QEQuery" value="@ViewBag.QEQuery"></td>
+                <td><button class="btn btn-outline-success" type="submit" name="Search">Search</button></td>
+            </tr>
+
+        </table>
+    </div>
+    <div class="panel-body">
+        <b>Passages : @Html.Raw((string.IsNullOrEmpty(Model.passageData.PassageId)) ? "0" : "1")</b>
+        @if (!string.IsNullOrEmpty(Model.passageData.PassageId))
+        {
+            <table style="table-layout:auto">
+                <tr><td style="border-top: 1px solid;border-left: 1px solid;border-right: 1px solid;padding-top:5px"><p style="color:dimgray;"><b>RootQueries : </b>@Html.Raw(Model.passageData.RootQueries)</p></td></tr>
+                <tr><td style="border-left: 1px solid;border-right: 1px solid"><p style="color:dimgray">@Html.Raw(Model.passageData.RawAnswer)</p></td></tr>
+                <tr><td style="border-left: 1px solid;border-right: 1px solid"><a href="@Model.passageData.Url" target="_blank" style="color:blue">@Html.Raw(Model.passageData.HtmlHeadTitle)</a></td></tr>
+                <tr><td style="border-bottom: 1px solid;border-left: 1px solid;border-right: 1px solid"><a href="@Model.passageData.Url" target="_blank" style="color:olivedrab">@Html.Raw(Model.passageData.Url)</a></td></tr>
+                <tr><td><p style="color:white">.</p></td></tr>
+            </table>
+
+            @if (Model.allCandidateQueries.Count() > 0)
+            {
+                <table style="table-layout:auto" class="table">
+                    <tr>
+                        <th>Yes/No</th>
+                        <th>Impression</th>
+                        <th>Query</th>
+                    </tr>
+                    @foreach (var item in Model.allCandidateQueries)
+                    {
+                        <tr>
+                            <td><input type="checkbox" name="check" value="@item.pwquery" @Html.Raw((@item.selected == "true") ? "checked" : "")></td>
+                            <td>@Html.Raw(item.impression)</td>
+                            <td>@Html.Raw(item.pwquery)</td>
+                        </tr>
+
+                    }
+
+                </table>
+                }
+         }
+        </div>
+
+
+
+}
