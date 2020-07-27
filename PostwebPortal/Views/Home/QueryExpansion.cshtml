@@ -46,7 +46,7 @@
                     @foreach (var item in Model.allCandidateQueries)
                     {
                         <tr>
-                            <td><input type="checkbox" name="check" value="@item.pwquery" @Html.Raw((@item.selected == "true") ? "checked" : "")></td>
+                            <td><input type="checkbox" name="check" value="@item.pwquery" @Html.Raw((@item.selectedanswerid == "true") ? "checked" : "")></td>
                             <td>@Html.Raw(item.impression)</td>
                             <td>@Html.Raw(item.pwquery)</td>
                         </tr>

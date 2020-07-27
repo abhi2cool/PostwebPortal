@@ -9,12 +9,16 @@ namespace PostwebPortal.Models
     public class RootQueryCandidate
     {
 		[Key]
-		public string answerid { get; set; }
-		[Key]
+		public string queryid { get; set; }
+		public string url { get; set; }
 		public string pwquery { get; set; }
 		public long impression { get; set; }
-		public string selected { get; set; }
-		public string judgedetails { get; set; }		
+		public Nullable<DateTime> lastmodifiedon { get; set; }
+		public string lastmodifiedby { get; set; }
+		public string selectedanswerid { get; set; }
+
+
+
 
 
 	}

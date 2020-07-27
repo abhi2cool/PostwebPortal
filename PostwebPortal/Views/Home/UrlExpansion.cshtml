@@ -1,0 +1,203 @@
+﻿@model List<PostwebPortal.Models.RootQueryCandidate>
+@{
+    ViewData["Title"] = "UrlExpansion";
+}
+
+
+<b>URL Expansion</b>
+
+<style>
+    .fixed_header {
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: collapse;
+        white-space: nowrap;
+    }
+
+        .fixed_header tbody {
+            display: block;
+            width: 100%;
+            overflow: auto;
+            height: 300px;
+        }
+
+        .fixed_header thead tr {
+            display: block;
+        }
+
+
+        .fixed_header th, .fixed_header td {
+            padding: 5px;
+            text-align: left;
+            width: 200px;
+        }
+
+    tr:nth-child(even) {
+        background-color: lightgray
+    }
+</style>
+
+
+
+@using (Html.BeginForm("UrlExpansion", "Home", FormMethod.Post, new { enctype = "multipart/form-data" }))
+{
+
+    <div class="input-group mb-3" align="center">
+        <table>
+            <tr>
+                <td width="500"><input type="text" class="form-control" placeholder="Url" aria-label="Url" aria-describedby="basic-addon2" id="url" name="url" value="@ViewBag.url" required></td>
+                <td><button class="btn btn-outline-success" type="submit" name="Search">Search</button></td>
+            </tr>
+
+        </table>
+
+    </div>
+}
+
+@using (Html.BeginForm("QueryUpdate", "Home", FormMethod.Post, new { enctype = "multipart/form-data" }))
+{
+    @if (ViewBag.PassageCount > 0)
+    {
+        <div style="text-align:right">
+            <input type="text" placeholder="judgename" aria-label="judgename" aria-describedby="basic-addon2" id="judgename" name="judgename" required>
+            <button class="btn btn-outline-success" type="submit" name="Save" value="submit">Save</button>
+        </div>
+        <b>Passages : @ViewBag.PassageCount</b>
+        <b>Title: </b><a href="@ViewBag.Url" target="_blank" style="color:blue">@ViewBag.PassageTitle</a>
+        <b>URL: </b><a href="@ViewBag.Url" target="_blank" style="color:olivedrab">@ViewBag.Url</a>
+
+
+
+        @if (Model.Count() > 0)
+        {
+
+
+            <table style="table-layout:auto; width:100%" class="fixed_header">
+                <thead>
+                    <tr>
+                        <th>
+                            Query
+                        </th>
+                        @foreach (var passage in ViewBag.Passages)
+                        {
+
+
+                            <td style="border-top: 1px solid;border-bottom: 1px solid;border-right:1px solid; padding-top:5px">
+                                <div style="height: 200px; width: 400px; overflow-x: auto; overflow-y: auto">
+                                    <p style="color:dimgray;"><b>RootQueries : </b>@Html.Raw(passage.RootQueries)</p>
+                                    <p style="color:dimgray" id="rawAnswer">@Html.Raw(passage.RawAnswer)</p>
+                                </div>
+                            </td>
+
+
+
+
+
+                        }
+                        <th style="border-top: 1px solid;border-bottom: 1px solid;border-right:1px solid">None</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+
+
+
+                    @for (int i = 0; i < Model.Count; i++)
+                    {
+
+                        <tr>
+
+                            <td style="text-align:left">
+                                @Html.DisplayTextFor(m => m[i].pwquery)
+                                @Html.HiddenFor(m => m[i].queryid)
+
+
+                            </td>
+
+                            @foreach (PassageData passage in ViewBag.Passages)
+                            {
+                                <td style="text-align:center" title="@Model[i].pwquery" id="@Model[i].queryid|@passage.PassageId">
+
+                                    <div style=" width: 400px; overflow-x: auto; overflow-y: auto">
+
+                                        @if (Model[i].selectedanswerid == passage.PassageId)
+                                        {
+
+
+                                            @Html.RadioButtonFor(m => m[i].selectedanswerid, Model[i].selectedanswerid, true)
+                                        }
+                                        else
+                                        {
+                                            @Html.RadioButtonFor(m => m[i].selectedanswerid, passage.PassageId, false)
+                                        }
+
+
+
+                                    </div>
+
+                                </td>
+
+                            }
+                            <td>
+                                <div style=" text-align:center; width: 200px; overflow-x: auto; overflow-y: auto;">
+                                    @Html.RadioButtonFor(m => m[i].selectedanswerid, "none", false)
+                                </div>
+                            </td>
+
+
+                        </tr>
+
+                    }
+
+                </tbody>
+            </table>
+
+
+
+
+
+
+            <input type="hidden" class="form-control" name="url" id=url value=@ViewBag.url>
+        }
+    }
+
+
+
+
+
+}
+
+<script language="JavaScript" type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+<script>
+
+    $(document).ready(function () {
+
+        $('td').click(function () {
+
+            var cell = $(this),
+                state = cell.data('state') || 'first';
+
+            switch (state) {
+                case 'first':
+                    cell.data('state', 'second');
+                    cell.find('input:radio').attr('checked', true);
+                    cell.find('input:radio').data('checked', true);
+                    cell.find('input:radio').prop('checked', true);
+                    break;
+                case 'second':
+                    cell.data('state', 'first');
+                    cell.find('input:radio').attr('checked', false);
+                    cell.find('input:radio').data('checked', false);
+                    cell.find('input:radio').prop('checked', false);
+                    break;
+                default:
+
+                    break;
+            }
+        });
+    });
+
+
+</script>
+

@@ -62,7 +62,7 @@ namespace PostwebPortal.Controllers
             //_context.answerid_pwqueries_selection.Add(new RootQueryCandidate { answerid = "b", impression = 2, judgedetails = "", pwquery = "testb2", selected = "false" });
             //_context.SaveChanges();
             //----------------
-            var results = _context.answerid_pwqueries_selection.Where(q => q.answerid == "a").OrderByDescending(i => i.impression);
+            var results = _context.url_pwqueries_selection.Where(q => q.selectedanswerid == "a").OrderByDescending(i => i.impression);
 
             return View(response.Result);
         }
@@ -89,6 +89,92 @@ namespace PostwebPortal.Controllers
             
             return View(qeResponseData);
             
+        }
+
+
+        public IActionResult UrlExpansion()
+        {
+            List<RootQueryCandidate> qeResponseData = new List<RootQueryCandidate>();
+            return View(qeResponseData);
+        }
+       
+        [HttpPost]
+        public IActionResult UrlExpansion(string url)
+        {
+            CategoryMatchField urlfields = new CategoryMatchField(UrlJoinHelper.geturlmatchfields(url.ToLower()));
+            string key = urlfields.category + ":" + urlfields.matchfield;
+            List<RootQueryCandidate> qeResponseData = new List<RootQueryCandidate>();
+            string check = Request.Form["check"];
+            ViewBag.url = url;
+            HashSet<string> Urls = new HashSet<string> { url };
+           
+            var Passages = AzureSearchHelper.getPassagesfromUrls(Urls);
+            List<String> PassageIds = new List<string>();
+            ViewBag.Passages = Passages;
+            ViewBag.Url = Passages.FirstOrDefault().Url;
+            ViewBag.PassageTitle = Passages.FirstOrDefault().HtmlHeadTitle;
+            ViewBag.PassageCount = Passages.Count();
+
+            if (Passages.Count != 0)
+            {
+              
+                    qeResponseData = _context.getQueryCandidatesByUrl(key);
+                   
+            }
+            //ViewBag.PassageIds = PassageIds;
+
+            return View(qeResponseData);
+
+       
+        }
+
+        [HttpPost]
+        public IActionResult QueryUpdate( List<QueryPassageFormData> update, string url, string judgename )
+        {
+            CategoryMatchField urlfields = new CategoryMatchField(UrlJoinHelper.geturlmatchfields(url.ToLower()));
+            string key = urlfields.category + ":" + urlfields.matchfield;
+            //var headers = Request.Headers;
+            //string UEUrl = "xyz";
+            //QEResponseData qeResponseData = new QEResponseData();
+            string check = Request.Form["check"];
+            ViewBag.UEUrl = url;
+            HashSet<string> Urls = new HashSet<string> { url };
+
+            var Passages = AzureSearchHelper.getPassagesfromUrls(Urls);
+            List<String> PassageIds = new List<string>();
+            ViewBag.Passages = Passages;
+            ViewBag.Url = url;
+            ViewBag.PassageTitle = Passages.FirstOrDefault().HtmlHeadTitle;
+            ViewBag.PassageCount = Passages.Count();
+            List<RootQueryCandidate> updatedata = new List<RootQueryCandidate>();
+
+            if (Passages.Count != 0)
+            {
+                
+                    updatedata.AddRange(_context.getQueryCandidatesByUrl(key));
+                
+                foreach(var item in update)
+                {
+                    var i = updatedata.Where(a=> (a.queryid== item.queryid)
+                                                  &&(a.selectedanswerid != item.selectedanswerid )).FirstOrDefault();
+                    if (i != null)
+                    {
+                        i.selectedanswerid = item.selectedanswerid;
+                        i.lastmodifiedby = judgename;
+                        i.lastmodifiedon = DateTime.Now;
+                    }
+                }
+
+                _context.SaveChanges();
+
+             
+            }
+
+            //ViewBag.PassageIds = PassageIds;
+
+            return RedirectToAction("UrlExpansion", new { url = url });
+
+
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

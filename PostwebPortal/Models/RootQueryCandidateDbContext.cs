@@ -16,16 +16,18 @@ namespace PostwebPortal.Models
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<RootQueryCandidate>()
-                .HasKey(o => new { o.answerid, o.pwquery });
+                .HasKey(o => new { o.queryid });
         }
-        public DbSet<RootQueryCandidate> answerid_pwqueries_selection { get; set; }
-        public List<RootQueryCandidate> getQueryCandidates() => answerid_pwqueries_selection.Local.ToList<RootQueryCandidate>();
-        public List<RootQueryCandidate> getQueryCandidatesByAnswerId(string AnswerId) => answerid_pwqueries_selection.Where(q => q.answerid == AnswerId).OrderByDescending(i => i.impression).ToList();
+        public DbSet<RootQueryCandidate> url_pwqueries_selection { get; set; }
+        //public DbSet<QueryUrlInfo> answerid_pwqueries_selection { get; set; }
+        public List<RootQueryCandidate> getQueryCandidates() => url_pwqueries_selection.Local.ToList<RootQueryCandidate>();
+        public List<RootQueryCandidate> getQueryCandidatesByAnswerId(string AnswerId) => url_pwqueries_selection.Where(q => q.selectedanswerid == AnswerId).OrderByDescending(i => i.impression).ToList();
+        public List<RootQueryCandidate> getQueryCandidatesByUrl(string Url) => url_pwqueries_selection.Where(q => q.url == Url).OrderByDescending(i => i.impression).ToList();
 
         public void LoadTest()
         {
-            answerid_pwqueries_selection.Add(new RootQueryCandidate { answerid="a",impression=1,judgedetails="",pwquery="test1",selected="false"});
-            answerid_pwqueries_selection.Add(new RootQueryCandidate { answerid = "b", impression = 2, judgedetails = "", pwquery = "test2", selected = "false" });
+            url_pwqueries_selection.Add(new RootQueryCandidate { selectedanswerid="a",impression=1,lastmodifiedby="",pwquery="test1",lastmodifiedon=DateTime.Now});
+            url_pwqueries_selection.Add(new RootQueryCandidate { selectedanswerid = "b", impression = 2, lastmodifiedby = "", pwquery = "test2", lastmodifiedon = DateTime.Now });
         }
     }
 }
