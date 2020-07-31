@@ -1,12 +1,15 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Razor.Language;
 using Microsoft.Azure.CognitiveServices.Search.WebSearch;
 using Microsoft.Extensions.Logging;
 using PostwebPortal.Models;
+using X.PagedList;
 
 namespace PostwebPortal.Controllers
 {
@@ -92,14 +95,52 @@ namespace PostwebPortal.Controllers
         }
 
 
-        public IActionResult UrlExpansion()
+        public IActionResult UrlExpansion(int? page, string url, string? judgename)
         {
-            List<RootQueryCandidate> qeResponseData = new List<RootQueryCandidate>();
-            return View(qeResponseData);
+            if (url != null)
+            {
+
+                CategoryMatchField urlfields = new CategoryMatchField(UrlJoinHelper.geturlmatchfields(url.ToLower()));
+                string key = urlfields.category + ":" + urlfields.matchfield;
+                List<RootQueryCandidate> qeResponseData = new List<RootQueryCandidate>();
+                //string check = Request.Form["check"];
+                ViewBag.url = url;
+                HashSet<string> Urls = new HashSet<string> { url };
+
+                var Passages = AzureSearchHelper.getPassagesfromUrls(Urls);
+                //List<String> PassageIds = new List<string>();
+                ViewBag.Passages = Passages;
+                foreach (var Passage in Passages)
+                {
+                    Passage.RootQueries = Passage.RootQueries.Split(";").First();
+                }
+                ViewBag.Url = Passages.FirstOrDefault().Url;
+                ViewBag.PassageTitle = Passages.FirstOrDefault().HtmlHeadTitle;
+                ViewBag.PassageCount = Passages.Count();
+                ViewBag.JudgeName = judgename;
+                if (Passages.Count != 0)
+                {
+
+                    qeResponseData = _context.getQueryCandidatesByUrl(key);
+
+                }
+                //ViewBag.PassageIds = PassageIds;
+                var pageNumber = page ?? 1; // if no page is specified, default to the first page (1)
+                int pageSize = 100; // Get 25 students for each requested page.
+                IPagedList onePageOfQueries = qeResponseData.ToPagedList(pageNumber, pageSize);
+                ViewBag.Page = pageNumber;
+                return View(onePageOfQueries);
+            }
+            else
+            {
+                IPagedList<RootQueryCandidate> qeResponseData = new List<RootQueryCandidate>().ToPagedList(1, 100);
+                ViewBag.Page = 1;
+                return View(qeResponseData);
+            }
         }
        
         [HttpPost]
-        public IActionResult UrlExpansion(string url)
+        public IActionResult UrlExpansion(string url, int? page, string? judgename)
         {
             CategoryMatchField urlfields = new CategoryMatchField(UrlJoinHelper.geturlmatchfields(url.ToLower()));
             string key = urlfields.category + ":" + urlfields.matchfield;
@@ -107,14 +148,18 @@ namespace PostwebPortal.Controllers
             string check = Request.Form["check"];
             ViewBag.url = url;
             HashSet<string> Urls = new HashSet<string> { url };
-           
+            
             var Passages = AzureSearchHelper.getPassagesfromUrls(Urls);
-            List<String> PassageIds = new List<string>();
+            //List<String> PassageIds = new List<string>();
+            foreach (var Passage in Passages)
+            {
+                Passage.RootQueries = Passage.RootQueries.Split(";").First();
+            }
             ViewBag.Passages = Passages;
             ViewBag.Url = Passages.FirstOrDefault().Url;
             ViewBag.PassageTitle = Passages.FirstOrDefault().HtmlHeadTitle;
             ViewBag.PassageCount = Passages.Count();
-
+            ViewBag.Judgename = judgename;
             if (Passages.Count != 0)
             {
               
@@ -122,44 +167,53 @@ namespace PostwebPortal.Controllers
                    
             }
             //ViewBag.PassageIds = PassageIds;
-
-            return View(qeResponseData);
+            var pageNumber = page ?? 1; // if no page is specified, default to the first page (1)
+            int pageSize = 100; // Get 25 students for each requested page.
+            IPagedList onePageOfQueries = qeResponseData.ToPagedList(pageNumber, pageSize);
+            ViewBag.page = pageNumber;
+            return View(onePageOfQueries);
 
        
         }
 
         [HttpPost]
-        public IActionResult QueryUpdate( List<QueryPassageFormData> update, string url, string judgename )
+        public IActionResult QueryUpdate( List<QueryPassageFormData> update, string url, string judgename,int page )
         {
             CategoryMatchField urlfields = new CategoryMatchField(UrlJoinHelper.geturlmatchfields(url.ToLower()));
             string key = urlfields.category + ":" + urlfields.matchfield;
+            //key = "sac:ht204974";
             //var headers = Request.Headers;
             //string UEUrl = "xyz";
             //QEResponseData qeResponseData = new QEResponseData();
             string check = Request.Form["check"];
-            ViewBag.UEUrl = url;
-            HashSet<string> Urls = new HashSet<string> { url };
-
-            var Passages = AzureSearchHelper.getPassagesfromUrls(Urls);
-            List<String> PassageIds = new List<string>();
-            ViewBag.Passages = Passages;
-            ViewBag.Url = url;
-            ViewBag.PassageTitle = Passages.FirstOrDefault().HtmlHeadTitle;
-            ViewBag.PassageCount = Passages.Count();
+            //ViewBag.UEUrl = url;
+            //HashSet<string> Urls = new HashSet<string> { url };
+            //ViewBag.page = page;
+            //var Passages = AzureSearchHelper.getPassagesfromUrls(Urls);
+            // List<String> PassageIds = new List<string>();
+            //foreach (var Passage in Passages)
+            //{
+                //Passage.RootQueries = Passage.RootQueries.Split(";").First();   
+            //}
+            //ViewBag.Passages = Passages;
+            //ViewBag.Url = url;
+            //ViewBag.PassageTitle = Passages.FirstOrDefault().HtmlHeadTitle;
+            //ViewBag.PassageCount = Passages.Count();
             List<RootQueryCandidate> updatedata = new List<RootQueryCandidate>();
-
-            if (Passages.Count != 0)
+            
+            if (update.Count != 0)
             {
                 
                     updatedata.AddRange(_context.getQueryCandidatesByUrl(key));
                 
                 foreach(var item in update)
                 {
+                    item.selectedanswerid = item.selectedanswerid ?? "none";
                     var i = updatedata.Where(a=> (a.queryid== item.queryid)
                                                   &&(a.selectedanswerid != item.selectedanswerid )).FirstOrDefault();
                     if (i != null)
                     {
-                        i.selectedanswerid = item.selectedanswerid;
+                        i.selectedanswerid = item.selectedanswerid ;
                         i.lastmodifiedby = judgename;
                         i.lastmodifiedon = DateTime.Now;
                     }
@@ -172,7 +226,7 @@ namespace PostwebPortal.Controllers
 
             //ViewBag.PassageIds = PassageIds;
 
-            return RedirectToAction("UrlExpansion", new { url = url });
+            return RedirectToAction("UrlExpansion", new { url = url, page= page, judgename= judgename });
 
 
         }
