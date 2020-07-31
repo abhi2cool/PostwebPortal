@@ -1,4 +1,8 @@
-﻿@model List<PostwebPortal.Models.RootQueryCandidate>
+﻿
+@using X.PagedList.Mvc.Core; <!--import to get HTML Helper-->
+@using X.PagedList;
+
+@model IPagedList<PostwebPortal.Models.RootQueryCandidate>
 @{
     ViewData["Title"] = "UrlExpansion";
 }
@@ -7,34 +11,44 @@
 <b>URL Expansion</b>
 
 <style>
-    .fixed_header {
-        width: 100%;
-        table-layout: fixed;
+    table {
+        text-align: left;
+        position: relative;
         border-collapse: collapse;
-        white-space: nowrap;
     }
 
-        .fixed_header tbody {
-            display: block;
-            width: 100%;
-            overflow: auto;
-            height: 300px;
-        }
+    th, td {
+        padding: 0.25rem;
+    }
 
-        .fixed_header thead tr {
-            display: block;
-        }
+    tr.red th {
+        background: red;
+        color: white;
+    }
 
-
-        .fixed_header th, .fixed_header td {
-            padding: 5px;
-            text-align: left;
-            width: 200px;
-        }
+    th {
+        background: white;
+        position: sticky;
+        top: 0; /* Don't forget this, required for the stickiness */
+        box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+    }
 
     tr:nth-child(even) {
         background-color: lightgray
     }
+
+    td.a:hover {
+        background-color: greenyellow;
+    }
+
+    .resize {
+        resize: both;
+        overflow: auto;
+        display: block;
+    }
+
+
+
 </style>
 
 
@@ -58,14 +72,11 @@
 {
     @if (ViewBag.PassageCount > 0)
     {
-        <div style="text-align:right">
-            <input type="text" placeholder="judgename" aria-label="judgename" aria-describedby="basic-addon2" id="judgename" name="judgename" required>
-            <button class="btn btn-outline-success" type="submit" name="Save" value="submit">Save</button>
-        </div>
+        <p>
         <b>Passages : @ViewBag.PassageCount</b>
         <b>Title: </b><a href="@ViewBag.Url" target="_blank" style="color:blue">@ViewBag.PassageTitle</a>
         <b>URL: </b><a href="@ViewBag.Url" target="_blank" style="color:olivedrab">@ViewBag.Url</a>
-
+            </p>
 
 
         @if (Model.Count() > 0)
@@ -75,19 +86,21 @@
             <table style="table-layout:auto; width:100%" class="fixed_header">
                 <thead>
                     <tr>
-                        <th>
+                        <th style="border-left: 1px solid; border-top: 1px solid; border-bottom: 1px solid; border-right: 1px solid; padding-top: 5px">
                             Query
                         </th>
                         @foreach (var passage in ViewBag.Passages)
                         {
 
 
-                            <td style="border-top: 1px solid;border-bottom: 1px solid;border-right:1px solid; padding-top:5px">
-                                <div style="height: 200px; width: 400px; overflow-x: auto; overflow-y: auto">
+                            <th style="border-top: 1px solid;border-bottom: 1px solid;border-right:1px solid; padding-top:5px">
+                                <div class="resize" style="height: 200px; width: 400px; overflow-x: auto; overflow-y: auto">
+                                    <p id="@passage.PassageId" style="color:blue"></p>
                                     <p style="color:dimgray;"><b>RootQueries : </b>@Html.Raw(passage.RootQueries)</p>
                                     <p style="color:dimgray" id="rawAnswer">@Html.Raw(passage.RawAnswer)</p>
+                                    
                                 </div>
-                            </td>
+                            </th>
 
 
 
@@ -105,18 +118,22 @@
                     @for (int i = 0; i < Model.Count; i++)
                     {
 
-                        <tr>
+                        <tr class="query">
 
-                            <td style="text-align:left">
-                                @Html.DisplayTextFor(m => m[i].pwquery)
-                                @Html.HiddenFor(m => m[i].queryid)
+                            <td style="text-align:left  ">
+                                <div  class="resize">
+                                
+                                    @Html.DisplayTextFor(m => m[i].pwquery)
+                                
+                                    @Html.HiddenFor(m => m[i].queryid)
 
-
+                                    
+                                </div>
                             </td>
 
                             @foreach (PassageData passage in ViewBag.Passages)
                             {
-                                <td style="text-align:center" title="@Model[i].pwquery" id="@Model[i].queryid|@passage.PassageId">
+                                <td class="a" style="text-align:center" title="@Model[i].pwquery" id="@Model[i].queryid|@passage.PassageId" onclick="myFunction()">
 
                                     <div style=" width: 400px; overflow-x: auto; overflow-y: auto">
 
@@ -138,9 +155,19 @@
                                 </td>
 
                             }
-                            <td>
+                            <td onclick="myFunction()" class="a">
                                 <div style=" text-align:center; width: 200px; overflow-x: auto; overflow-y: auto;">
-                                    @Html.RadioButtonFor(m => m[i].selectedanswerid, "none", false)
+                                    @if (Model[i].selectedanswerid == null || Model[i].selectedanswerid == "none")
+                                    {
+
+                                        @Html.RadioButtonFor(m => m[i].selectedanswerid, "none", true)
+
+                                    }
+                                    else
+                                    {
+
+                                        @Html.RadioButtonFor(m => m[i].selectedanswerid, "none", false)
+                                    }
                                 </div>
                             </td>
 
@@ -148,6 +175,7 @@
                         </tr>
 
                     }
+                    <tr id="total"></tr>
 
                 </tbody>
             </table>
@@ -158,20 +186,35 @@
 
 
             <input type="hidden" class="form-control" name="url" id=url value=@ViewBag.url>
+            <input type="hidden" class="form-control" name="page" id=url value=@ViewBag.page>
+            <div style="text-align:right">
+                <input type="text" placeholder="judgename" aria-label="judgename" aria-describedby="basic-addon2" id="judgename" name="judgename" value="@ViewBag.Judgename" required>
+                <button class="btn btn-outline-success" type="submit" name="Submit">Save</button>
+            </div>
         }
     }
 
 
-
-
+    <div onclick=" save();">
+        @Html.PagedListPager((IPagedList)Model, page => Url.Action("UrlExpansion", new { page = page, url = ViewBag.Url, judgename = ViewBag.Judgename }),
+        new X.PagedList.Mvc.Core.Common.PagedListRenderOptions
+        {
+            DisplayItemSliceAndTotal = true,
+            ContainerDivClasses = new[] { "navigation" },
+            LiElementClasses = new[] { "page-item" },
+            PageClasses = new[] { "page-link" },
+        })
+    </div>
 
 }
 
 <script language="JavaScript" type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 
 <script>
-
+    var counter = 0;
     $(document).ready(function () {
+
+
 
         $('td').click(function () {
 
@@ -198,6 +241,77 @@
         });
     });
 
+    function myFunction() {
+        counter++;
+    }
 
+    function save() {
+        if (counter != 0) {
+            alert("Please save before proceeding");
+            event.preventDefault();
+            returnToPreviousPage();
+            return false;
+        }
+
+        return true;
+    }
+
+
+    $('table').ready(function () {                        //Add event listener on radio
+
+        var result = [];
+        var output = "<td>Total</td>"//Init the result variable
+        $('.query').each(function () {                                      //Select the row ( class stunden ) and loop
+            $(this).find('input[type="radio"]').each(function (i) {          //Find all checkbox on a row and loop
+                result[i] = result[i] || 0;                                      //Init if index does not exist
+                result[i] += this.checked;
+
+                var $cell = $(this).closest("td");
+                if (this.checked) {
+                    $cell.css("background-color", "green");
+                }
+                if (!this.checked) {
+                    $cell.css("background-color", "");
+                }// +1 if checked
+            })
+        })
+        result.forEach(function (item) {
+            output += '<td style="text-align:center">' + item + '</td>'
+
+        });
+
+        document.getElementById("total").innerHTML = output;
+
+        @if (ViewBag.PassageCount > 0)
+        {@for (int i=0;i<ViewBag.PassageCount; i++)
+        { <text>document.getElementById(@ViewBag.Passages[i].PassageId).innerHTML = "Count : " + result[@i];</text> }}
+    });
+
+    $('tr').click(function () {                        //Add event listener on radio
+
+        var result = [];
+        var output = "<td>Total</td>"//Init the result variable
+        $('.query').each(function () {                                      //Select the row ( class stunden ) and loop
+            $(this).find('input[type="radio"]').each(function (i) {          //Find all checkbox on a row and loop
+                result[i] = result[i] || 0;                                      //Init if index does not exist
+                result[i] += this.checked;
+
+                var $cell = $(this).closest("td");
+                if (this.checked) {
+                    $cell.css("background-color", "green");
+                }
+                if (!this.checked) {
+                    $cell.css("background-color", "");
+                }// +1 if checked
+            })
+        })
+        result.forEach(function (item) {
+            output += '<td style="text-align:center">' + item + '</td>'
+
+        });
+        @if (ViewBag.PassageCount > 0)
+        {@for (int i=0;i<ViewBag.PassageCount; i++)
+        { <text>document.getElementById(@ViewBag.Passages[i].PassageId).innerHTML = "Count : " + result[@i];</text> }}
+        });
 </script>
 
