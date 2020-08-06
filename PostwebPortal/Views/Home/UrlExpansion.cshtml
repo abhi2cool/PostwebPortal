@@ -59,7 +59,8 @@
     <div class="input-group mb-3" align="center">
         <table>
             <tr>
-                <td width="500"><input type="text" class="form-control" placeholder="Url" aria-label="Url" aria-describedby="basic-addon2" id="url" name="url" value="@ViewBag.url" required></td>
+                <td width="500"><input type="text" class="form-control" placeholder="Url" aria-label="Url" aria-describedby="basic-addon2" id="url" name="url" value="@ViewBag.Url" required></td>
+                <td width="500"><input type="text" class="form-control" placeholder="Keys Specarated by || (eg: how to||icloud)" aria-label="Keys" aria-describedby="basic-addon2" id="keys" name="keys" value="@ViewBag.Keys" ></td>
                 <td><button class="btn btn-outline-success" type="submit" name="Search">Search</button></td>
             </tr>
 
@@ -79,39 +80,73 @@
             </p>
 
 
-        @if (Model.Count() > 0)
-        {
+        <table style="table-layout:auto; width:100%" class="fixed_header">
+            <thead>
+                <tr>
+                    <th style="border-left: 1px solid; border-top: 1px solid; border-bottom: 1px solid; border-right: 1px solid; padding-top: 5px">
+                        Query  <button class="btn btn-outline-success" onclick="toggle()" name="Add">Add</button>
+                    </th>
+                    @foreach (var passage in ViewBag.Passages)
+                    {
 
 
-            <table style="table-layout:auto; width:100%" class="fixed_header">
-                <thead>
-                    <tr>
-                        <th style="border-left: 1px solid; border-top: 1px solid; border-bottom: 1px solid; border-right: 1px solid; padding-top: 5px">
-                            Query
+                        <th style="border-top: 1px solid;border-bottom: 1px solid;border-right:1px solid; padding-top:5px">
+                            <div class="resize" style="height: 200px; width: 400px; overflow-x: auto; overflow-y: auto">
+                                <p  style="color:blue">Total count: @passage.selectedcount</p>
+                                <p style="color:dimgray;"><b>RootQueries : </b>@Html.Raw(passage.RootQueries)</p>
+                                <p style="color:dimgray" id="rawAnswer">@Html.Raw(passage.RawAnswer)</p>
+
+                            </div>
                         </th>
-                        @foreach (var passage in ViewBag.Passages)
-                        {
-
-
-                            <th style="border-top: 1px solid;border-bottom: 1px solid;border-right:1px solid; padding-top:5px">
-                                <div class="resize" style="height: 200px; width: 400px; overflow-x: auto; overflow-y: auto">
-                                    <p id="@passage.PassageId" style="color:blue"></p>
-                                    <p style="color:dimgray;"><b>RootQueries : </b>@Html.Raw(passage.RootQueries)</p>
-                                    <p style="color:dimgray" id="rawAnswer">@Html.Raw(passage.RawAnswer)</p>
-                                    
-                                </div>
-                            </th>
 
 
 
 
 
-                        }
-                        <th style="border-top: 1px solid;border-bottom: 1px solid;border-right:1px solid">None</th>
+                    }
+                    <th style="border-top: 1px solid;border-bottom: 1px solid;border-right:1px solid">None</th>
 
-                    </tr>
-                </thead>
-                <tbody>
+                </tr>
+            </thead>
+            <tbody>
+                <tr id="hidethis" style="display:none">
+                    <td style="text-align:left  ">
+                        <div class="resize">
+
+                            <textarea name="Queries" id="queries"></textarea>
+                        </div>
+                    </td>
+
+                    @foreach (PassageData passage in ViewBag.Passages)
+                    {
+                        <td class="a" style="text-align:center">
+
+                            <div style=" width: 400px; overflow-x: auto; overflow-y: auto">
+
+                                <input type="radio" name="selectedanswerid" value="@passage.PassageId">
+
+
+
+                            </div>
+
+                        </td>
+
+                    }
+                    <td>
+                        <div style=" text-align:center; width: 200px; overflow-x: auto; overflow-y: auto;">
+                            <button class="btn btn-outline-success" onclick="addQuery()"> Add </button>
+                        </div>
+                    </td>
+
+
+                </tr>
+                @if (Model.Count() > 0)
+                {
+
+
+
+
+
 
 
 
@@ -121,13 +156,13 @@
                         <tr class="query">
 
                             <td style="text-align:left  ">
-                                <div  class="resize">
-                                
+                                <div class="resize">
+
                                     @Html.DisplayTextFor(m => m[i].pwquery)
-                                
+
                                     @Html.HiddenFor(m => m[i].queryid)
 
-                                    
+
                                 </div>
                             </td>
 
@@ -177,7 +212,16 @@
                     }
                     <tr id="total"></tr>
 
-                </tbody>
+
+
+
+
+
+
+
+
+                }
+            </tbody>
             </table>
 
 
@@ -196,7 +240,7 @@
 
 
     <div onclick=" save();">
-        @Html.PagedListPager((IPagedList)Model, page => Url.Action("UrlExpansion", new { page = page, url = ViewBag.Url, judgename = ViewBag.Judgename }),
+        @Html.PagedListPager((IPagedList)Model, page => Url.Action("UrlExpansion", new { page = page, url = ViewBag.Url, judgename = ViewBag.Judgename, keys = ViewBag.Keys }),
         new X.PagedList.Mvc.Core.Common.PagedListRenderOptions
         {
             DisplayItemSliceAndTotal = true,
@@ -312,6 +356,47 @@
         @if (ViewBag.PassageCount > 0)
         {@for (int i=0;i<ViewBag.PassageCount; i++)
         { <text>document.getElementById(@ViewBag.Passages[i].PassageId).innerHTML = "Count : " + result[@i];</text> }}
-        });
+    });
+    function addQuery(){
+
+        var queries = document.getElementById("queries").value;
+        var judgename = document.getElementById("judgename").value;
+        var ele = document.getElementsByName("selectedanswerid");
+        var answerid;
+        for (i = 0; i < ele.length; i++) {
+            if (ele[i].checked)
+
+                    answerid = ele[i].value;
+        }
+
+        if (!answerid)
+        {
+            answerid = "none";
+        }
+        if (!queries) {
+            alert("queries cannot be left blank");
+        }
+        else if (!judgename) {
+            alert("judgename cannot be left blank");
+        }
+        else {
+            var url = '@Url.Action("AddQuery")';
+            url += '/?queries=' + queries + '&judgename=' + judgename + '&selectedanswerid=' + answerid + '&page=' + '@ViewBag.page' + '&keys=' + '@ViewBag.keys' + '&url=' + '@ViewBag.url';
+            window.location.href = url;
+        }
+
+
+
+    }
+
+    function toggle() {
+        if (document.getElementById("hidethis").style.display == 'none') {
+            document.getElementById("hidethis").style.display = 'table-row'; // set to table-row instead of an empty string
+        } else {
+            document.getElementById("hidethis").style.display = 'none';
+        }
+    }
+
+
 </script>
 

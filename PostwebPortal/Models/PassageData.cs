@@ -29,6 +29,7 @@ namespace PostwebPortal.Models
         [Analyzer(AnalyzerName.AsString.EnMicrosoft)]
         public string RootQueries { get; set; }
 
+        public int selectedcount { get; set; }
 
     }
 
