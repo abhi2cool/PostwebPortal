@@ -95,7 +95,7 @@ namespace PostwebPortal.Controllers
         }
 
 
-        public IActionResult UrlExpansion(int? page, string url, string? judgename, string? keys)
+        public IActionResult UrlExpansion(int? page, string url, string? judgename, string? keys, string? isselected)
         {
             if (url != null)
             {
@@ -115,11 +115,16 @@ namespace PostwebPortal.Controllers
                 ViewBag.PassageCount = Passages.Count();
                 ViewBag.JudgeName = judgename;
                 ViewBag.Keys = keys;
+                ViewBag.IsSelected = isselected;
                 if (Passages.Count != 0)
                 {
+                    if (isselected == "selected")
 
+                        qeResponseData = _context.getQueryCandidatesByUrl(key).Where(m => m.selectedanswerid != "none").ToList();
+                    else if(isselected == "none")
+                        qeResponseData = _context.getQueryCandidatesByUrl(key).Where(m => m.selectedanswerid == "none").ToList();
+                    else
                     qeResponseData = _context.getQueryCandidatesByUrl(key);
-
                 }
 
 
@@ -137,7 +142,7 @@ namespace PostwebPortal.Controllers
                 foreach (var Passage in Passages)
                 {
                     Passage.selectedcount = qeResponseData.Where(x => x.selectedanswerid == Passage.PassageId).Count();
-                    Passage.RootQueries = Passage.RootQueries.Split(";").First();
+                    Passage.RootQueries = string.Join(";", Passage.RootQueries.Split(";").Take(5));
                 }
                 ViewBag.Passages = Passages;
 
@@ -151,14 +156,14 @@ namespace PostwebPortal.Controllers
             }
             else
             {
-                IPagedList<RootQueryCandidate> qeResponseData = new List<RootQueryCandidate>().ToPagedList(1, 100);
+                IPagedList<RootQueryCandidate> qeResponseData = new List<RootQueryCandidate>().ToPagedList(1, 500);
                 ViewBag.Page = 1;
                 return View(qeResponseData);
             }
         }
        
         [HttpPost]
-        public IActionResult UrlExpansion(string url, int? page, string? judgename, string? keys)
+        public IActionResult UrlExpansion(string url, int? page, string? judgename, string? keys, string? isselected)
         {
             CategoryMatchField urlfields = new CategoryMatchField(UrlJoinHelper.geturlmatchfields(url.ToLower()));
             string key = urlfields.category + ":" + urlfields.matchfield;
@@ -176,14 +181,19 @@ namespace PostwebPortal.Controllers
             ViewBag.Judgename = judgename;
             ViewBag.Keys = keys;
 
+            ViewBag.IsSelected = isselected;
             if (Passages.Count != 0)
             {
-              
+                if (isselected == "selected")
+
+                    qeResponseData = _context.getQueryCandidatesByUrl(key).Where(m => m.selectedanswerid != "none").ToList();
+                else if (isselected == "none")
+                    qeResponseData = _context.getQueryCandidatesByUrl(key).Where(m => m.selectedanswerid == "none").ToList();
+                else
                     qeResponseData = _context.getQueryCandidatesByUrl(key);
-                   
             }
 
-            
+
 
             if (keys != null && qeResponseData.Count > 0)
             {
@@ -198,14 +208,14 @@ namespace PostwebPortal.Controllers
             foreach (var Passage in Passages)
             {
                 Passage.selectedcount = qeResponseData.Where(x => x.selectedanswerid == Passage.PassageId).Count();
-                Passage.RootQueries = Passage.RootQueries.Split(";").First();
+                Passage.RootQueries = string.Join(";", Passage.RootQueries.Split(";").Take(5));
             }
             ViewBag.Passages = Passages;
 
 
             //ViewBag.PassageIds = PassageIds;
             var pageNumber = page ?? 1; // if no page is specified, default to the first page (1)
-            int pageSize = 100; // Get 25 students for each requested page.
+            int pageSize = 500; // Get 25 students for each requested page.
             IPagedList onePageOfQueries = qeResponseData.ToPagedList(pageNumber, pageSize);
             ViewBag.page = pageNumber;
             return View(onePageOfQueries);
@@ -214,7 +224,7 @@ namespace PostwebPortal.Controllers
         }
 
         [HttpPost]
-        public IActionResult QueryUpdate( List<QueryPassageFormData> update, string url, string judgename,int page , string? keys )
+        public IActionResult QueryUpdate( List<QueryPassageFormData> update, string url, string judgename,int page , string? keys, string? isselected )
         {
             CategoryMatchField urlfields = new CategoryMatchField(UrlJoinHelper.geturlmatchfields(url.ToLower()));
             string key = urlfields.category + ":" + urlfields.matchfield;
@@ -263,7 +273,7 @@ namespace PostwebPortal.Controllers
 
             //ViewBag.PassageIds = PassageIds;
 
-            return RedirectToAction("UrlExpansion", new { url = url, page= page, judgename= judgename, keys= keys });
+            return RedirectToAction("UrlExpansion", new { url = url, page= page, judgename= judgename, keys= keys, isselected = isselected });
 
 
         }
@@ -311,6 +321,7 @@ namespace PostwebPortal.Controllers
                         i.selectedanswerid = selectedanswerid;
                         i.lastmodifiedby = judgename;
                         i.lastmodifiedon = DateTime.Now;
+                        i.impression = -1;
                         _context.Add(i);
                         _context.SaveChanges();
 
