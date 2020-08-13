@@ -2,7 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.AzureAD.UI;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Razor.Language;
@@ -13,7 +17,8 @@ using X.PagedList;
 
 namespace PostwebPortal.Controllers
 {
-    
+
+    [Authorize]
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
@@ -43,7 +48,7 @@ namespace PostwebPortal.Controllers
             return View(response);
         }
 
-
+        [AllowAnonymous]
         public IActionResult Index()
         {
             ResponseData response = new ResponseData();
@@ -95,10 +100,15 @@ namespace PostwebPortal.Controllers
         }
 
 
-        public IActionResult UrlExpansion(int? page, string url, string? judgename, string? keys, string? isselected)
+        public IActionResult UrlExpansion(int? page, string url, string? keys, string? isselected)
         {
+            var identity = (ClaimsIdentity)HttpContext.User.Identity;
+            var judgename = identity.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var email = identity.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
+            ViewBag.JudgeName = judgename;
             if (url != null)
             {
+                
 
                 CategoryMatchField urlfields = new CategoryMatchField(UrlJoinHelper.geturlmatchfields(url.ToLower()));
                 string key = urlfields.category + ":" + urlfields.matchfield;
@@ -113,7 +123,7 @@ namespace PostwebPortal.Controllers
                 ViewBag.Url = Passages.FirstOrDefault().Url;
                 ViewBag.PassageTitle = Passages.FirstOrDefault().HtmlHeadTitle;
                 ViewBag.PassageCount = Passages.Count();
-                ViewBag.JudgeName = judgename;
+                
                 ViewBag.Keys = keys;
                 ViewBag.IsSelected = isselected;
                 if (Passages.Count != 0)
@@ -163,8 +173,11 @@ namespace PostwebPortal.Controllers
         }
        
         [HttpPost]
-        public IActionResult UrlExpansion(string url, int? page, string? judgename, string? keys, string? isselected)
+        public IActionResult UrlExpansion(string url, int? page, string? keys, string? isselected)
         {
+            var identity = (ClaimsIdentity)HttpContext.User.Identity;
+            var judgename = identity.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var email = identity.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
             CategoryMatchField urlfields = new CategoryMatchField(UrlJoinHelper.geturlmatchfields(url.ToLower()));
             string key = urlfields.category + ":" + urlfields.matchfield;
             List<RootQueryCandidate> qeResponseData = new List<RootQueryCandidate>();
@@ -224,8 +237,11 @@ namespace PostwebPortal.Controllers
         }
 
         [HttpPost]
-        public IActionResult QueryUpdate( List<QueryPassageFormData> update, string url, string judgename,int page , string? keys, string? isselected )
+        public IActionResult QueryUpdate( List<QueryPassageFormData> update, string url, int page , string? keys, string? isselected )
         {
+            var identity = (ClaimsIdentity)HttpContext.User.Identity;
+            var judgename = identity.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var email = identity.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
             CategoryMatchField urlfields = new CategoryMatchField(UrlJoinHelper.geturlmatchfields(url.ToLower()));
             string key = urlfields.category + ":" + urlfields.matchfield;
             //key = "sac:ht204974";
@@ -261,7 +277,7 @@ namespace PostwebPortal.Controllers
                     if (i != null)
                     {
                         i.selectedanswerid = item.selectedanswerid ;
-                        i.lastmodifiedby = judgename;
+                        i.lastmodifiedby = email;
                         i.lastmodifiedon = DateTime.Now;
                     }
                 }
@@ -278,8 +294,12 @@ namespace PostwebPortal.Controllers
 
         }
 
-        public IActionResult AddQuery(string queries,string selectedanswerid, string url, string judgename, int page, string? keys)
+        public IActionResult AddQuery(string queries,string selectedanswerid, string url, int page, string? keys)
         {
+            var identity = (ClaimsIdentity)HttpContext.User.Identity;
+            var judgename = identity.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+            var email = identity.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
+
             CategoryMatchField urlfields = new CategoryMatchField(UrlJoinHelper.geturlmatchfields(url.ToLower()));
             string key = urlfields.category + ":" + urlfields.matchfield;
             string[] allqueries = queries.Split("||");
@@ -319,11 +339,11 @@ namespace PostwebPortal.Controllers
                         i.pwquery = query;
                         i.url = key;
                         i.selectedanswerid = selectedanswerid;
-                        i.lastmodifiedby = judgename;
+                        i.lastmodifiedby = email;
                         i.lastmodifiedon = DateTime.Now;
                         i.impression = -1;
-                        _context.Add(i);
-                        _context.SaveChanges();
+                        _context.AddAsync(i);
+                        _context.SaveChangesAsync();
 
                     }
 
@@ -334,13 +354,13 @@ namespace PostwebPortal.Controllers
                         if (temp != null)
                         {
                             temp.selectedanswerid = selectedanswerid;
-                            temp.lastmodifiedby = judgename;
+                            temp.lastmodifiedby = email;
                             temp.lastmodifiedon = DateTime.Now;
                         }
-                        _context.SaveChanges();
+                        _context.SaveChangesAsync();
                     }
 
-                    _context.SaveChanges();
+                    _context.SaveChangesAsync();
 
                 }
 
@@ -360,6 +380,22 @@ namespace PostwebPortal.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+
+        [HttpPost]
+        public IActionResult SignOut()
+        {
+            return SignOut(new AuthenticationProperties()
+            { RedirectUri = "/Home/SignOutSuccess" },
+        AzureADDefaults.AuthenticationScheme,
+        AzureADDefaults.CookieScheme,
+        AzureADDefaults.OpenIdScheme);
+        }
+
+        public IActionResult SignOutSuccess()
+        {
+            return RedirectToAction("Index");
         }
 
     }
